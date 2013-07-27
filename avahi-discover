@@ -17,7 +17,9 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 # USA.
 
-import os, sys
+import os
+import optparse
+import sys
 
 try:
     import avahi, gettext, gtk, gobject, dbus, avahi.ServiceTypeDatabase
@@ -43,6 +45,7 @@ except ImportError, e:
 
 service_type_browsers = {}
 service_browsers = {}
+domain_browsers = {}
 
 def error_msg(msg):
     d = gtk.MessageDialog(parent=None, flags=gtk.DIALOG_MODAL,
@@ -65,6 +68,7 @@ class Main_window:
         self.ui.connect_signals(self)
         self.tree_view = self.ui.get_object("tree_view")
         self.info_label = self.ui.get_object("info_label")
+        self.domain = domain
         self.new()
 
     def on_tree_view_cursor_changed(self, widget, *args):
@@ -172,7 +176,8 @@ class Main_window:
 
         service_browsers[(interface, protocol, stype, domain)] = b
 
-    def browse_domain(self, interface, protocol, domain):
+    def browse_domain_services(self, interface, protocol, domain):
+        """Browse the services of a given domain"""
         global service_type_browsers
 
         # Are we already browsing this domain?
@@ -194,6 +199,24 @@ class Main_window:
             service_type_browsers[(interface, protocol, domain)] = b
         else:
             new_service_type(interface, protocol, stype, domain)
+
+    def browse_domain(self, interface, protocol, domain):
+        """Recursively discover domains"""
+        global domain_browsers
+        if domain_browsers.has_key((interface, protocol, domain)):
+            return
+        # Browse the services associated with this domain
+        print("Browing domain %s..." % domain)
+        self.browse_domain_services(interface, protocol, domain)
+        try:
+            b = dbus.Interface(self.bus.get_object(avahi.DBUS_NAME, self.server.DomainBrowserNew(interface, protocol, domain, avahi.DOMAIN_BROWSER_BROWSE, dbus.UInt32(0))), avahi.DBUS_INTERFACE_DOMAIN_BROWSER)
+        except DBusException, e:
+            print e
+            error_msg("You should check that the avahi daemon is running.\n\nError : %s" % e)
+            sys.exit(0)
+        else:
+            b.connect_to_signal('ItemNew', self.new_domain)
+            domain_browsers[(interface, protocol, domain)] = b
 
     def new_domain(self,interface, protocol, domain, flags):
         if self.zc_ifaces.has_key((interface,protocol)) == False:
@@ -252,7 +275,6 @@ class Main_window:
         column.set_expand(True);
         self.tree_view.append_column(column)
 
-        self.domain = None
         self.stype = None
         self.zc_ifaces = {}
         self.zc_domains = {}
@@ -275,13 +297,16 @@ class Main_window:
             db.connect_to_signal('ItemNew', self.new_domain)
         else:
             # Just browse the domain the user wants us to browse
-            self.browse_domain(avahi.IF_UNSPEC, avahi.PROTO_UNSPEC, domain)
+            self.browse_domain(avahi.IF_UNSPEC, avahi.PROTO_UNSPEC, self.domain)
 
     def gtk_main_quit(self, *args):
         gtk.main_quit()
 
 def main():
-    main_window = Main_window()
+    parser = optparse.OptionParser(usage="usage: %prog [options]")
+    parser.add_option('-d', '--domain', action='store', dest='domain', help='use this domain', metavar="DOMAIN")
+    (options, args) = parser.parse_args()
+    main_window = Main_window(domain=options.domain)
     gtk.main()
 
 if __name__ == "__main__":
