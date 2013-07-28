@@ -101,6 +101,12 @@ class Main_window:
         else:
             return str(self.siocgifname(interface)) + " " + str(self.protoname(protocol))
 
+    def get_domain_name(self, interface, protocol, domain):
+        if interface == -1 and protocol == -1:
+            return domain
+        else:
+            return domain + " on " + self.get_interface_name(interface, protocol)
+
     def service_resolved(self, interface, protocol, name, stype, domain, host, aprotocol, address, port, txt, flags):
         print "Service data for service '%s' of type '%s' in domain '%s' on %i.%i:" % (name, stype, domain, interface, protocol)
 
@@ -122,14 +128,18 @@ class Main_window:
             return stype
 
     def new_service(self, interface, protocol, name, stype, domain, flags):
-        print "Found service '%s' of type '%s' in domain '%s' on %i.%i." % (name, stype, domain, interface, protocol)
-        if self.zc_ifaces.has_key((interface,protocol)) == False:
+        domain_label = self.get_domain_name(interface, protocol, domain)
 
-            ifn = self.get_interface_name(interface, protocol)
-
-            self.zc_ifaces[(interface,protocol)] = self.insert_row(self.treemodel, None, ifn, None,interface,protocol,None,domain)
+        print "Found service '%s' of type '%s' in domain '%s'" % (name, stype, domain_label)
         if self.zc_domains.has_key((interface,protocol,domain)) == False:
-            self.zc_domains[(interface,protocol,domain)] = self.insert_row(self.treemodel, self.zc_ifaces[(interface,protocol)], domain,None,interface,protocol,None,domain)
+            # Find parent
+            parent = None
+            parent_domlen = 0
+            for k, v in self.zc_domains.items():
+                if domain.endswith(k[2]) and len(k[2]) > parent_domlen:
+                    parent = v
+                    parent_domlen = len(k[2])
+            self.zc_domains[(interface,protocol,domain)] = self.insert_row(self.treemodel, parent, domain_label, None, interface,protocol, None, domain)
         if self.zc_types.has_key((interface,protocol,stype,domain)) == False:
             thisDomain = self.zc_domains[(interface,protocol,domain)]
             self.zc_types[(interface,protocol,stype,domain)] = self.insert_row(self.treemodel, thisDomain, self.lookup_type(stype), name, interface,None,None,None)
@@ -155,11 +165,6 @@ class Main_window:
                 parent = self.treemodel.iter_parent(treeiter)
                 self.treemodel.remove(treeiter)
                 del self.zc_domains[(interface,protocol,domain)]
-                if self.treemodel.iter_has_child(parent) == False:
-                    treeiter=self.zc_ifaces[(interface,protocol)]
-                    parent = self.treemodel.iter_parent(treeiter)
-                    self.treemodel.remove(treeiter)
-                    del self.zc_ifaces[(interface,protocol)]
 
     def new_service_type(self, interface, protocol, stype, domain, flags):
         global service_browsers
@@ -206,7 +211,6 @@ class Main_window:
         if domain_browsers.has_key((interface, protocol, domain)):
             return
         # Browse the services associated with this domain
-        print("Browing domain %s..." % domain)
         self.browse_domain_services(interface, protocol, domain)
         try:
             b = dbus.Interface(self.bus.get_object(avahi.DBUS_NAME, self.server.DomainBrowserNew(interface, protocol, domain, avahi.DOMAIN_BROWSER_BROWSE, dbus.UInt32(0))), avahi.DBUS_INTERFACE_DOMAIN_BROWSER)
@@ -219,11 +223,16 @@ class Main_window:
             domain_browsers[(interface, protocol, domain)] = b
 
     def new_domain(self,interface, protocol, domain, flags):
-        if self.zc_ifaces.has_key((interface,protocol)) == False:
-            ifn = self.get_interface_name(interface, protocol)
-            self.zc_ifaces[(interface,protocol)] = self.insert_row(self.treemodel, None, ifn,None,interface,protocol,None,domain)
         if self.zc_domains.has_key((interface,protocol,domain)) == False:
-            self.zc_domains[(interface,protocol,domain)] = self.insert_row(self.treemodel, self.zc_ifaces[(interface,protocol)], domain,None,interface,protocol,None,domain)
+            # Find parent
+            parent = None
+            parent_domlen = 0
+            for k, v in self.zc_domains.items():
+                if domain.endswith(k[2]) and len(k[2]) > parent_domlen:
+                    parent = v
+                    parent_domlen = len(k[2])
+            domain_label = self.get_domain_name(interface, protocol, domain)
+            self.zc_domains[(interface,protocol,domain)] = self.insert_row(self.treemodel, parent, domain_label, None, interface,protocol, None, domain)
         if domain != "local":
             self.browse_domain(interface, protocol, domain)
 
@@ -276,7 +285,6 @@ class Main_window:
         self.tree_view.append_column(column)
 
         self.stype = None
-        self.zc_ifaces = {}
         self.zc_domains = {}
         self.zc_types = {}
         self.services_browsed = {}
