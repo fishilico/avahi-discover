@@ -252,7 +252,7 @@ class Main_window:
         infos += "<b>" + _("Service Name:") + "</b> %s\n"
         infos += "<b>" + _("Domain Name:") + "</b> %s\n"
         infos += "<b>" + _("Interface:") + "</b> %s %s\n"
-        infos += "<b>" + _("Address:") + "</b> %s/%s:%i\n%s"
+        infos += "<b>" + _("Address:") + "</b> %s / %s port %i\n%s"
         infos = infos % (stype, name, domain, self.siocgifname(interface), self.protoname(protocol), host, address, port, txts.strip())
         self.info_label.set_markup(infos)
 
