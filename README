@@ -1,0 +1,9 @@
+This project is an improvement of the Python avahi-discover program available
+at http://git.0pointer.de/?p=avahi.git;a=tree;f=avahi-python/avahi-discover
+
+It adds:
+ * Subdomain browsing (with Avahi's DomainBrowserNew)
+ * TreeView is now presented on domain/service type/service, no longer interface
+   or "Wide Area" items.
+ * .local domains folds automatically if other domains are available, to give a
+   clearer view.
