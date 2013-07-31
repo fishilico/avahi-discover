@@ -103,7 +103,15 @@ class MainWindow(browser.Browser):
         self.info_label.set_markup(infos)
 
     def insert_row(self, parent, content, name, interface, protocol, stype, domain):
-        treeiter = self.treemodel.insert_after(parent, None)
+        # Find the next treeiter of the inserted node to sort in lexicographic order
+        next_treeiter = self.treemodel.iter_children(parent)
+        while next_treeiter is not None:
+            current_content = self.treemodel.get(next_treeiter, 0)[0]
+            if current_content > content:
+                break
+            next_treeiter = self.treemodel.iter_next(next_treeiter)
+
+        treeiter = self.treemodel.insert_before(parent, next_treeiter)
         self.treemodel.set(treeiter, 0, content, 1, name, 2, str(interface), 3, str(protocol), 4, stype, 5, domain)
         return treeiter
 
