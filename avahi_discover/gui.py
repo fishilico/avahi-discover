@@ -130,7 +130,7 @@ class MainWindow(browser.Browser):
 
         # For local domain, use local-unspecified parent
         if (interface != avahi.IF_UNSPEC or protocol != avahi.PROTO_UNSPEC) and domain == 'local':
-            parent = self.get_or_create_domain_iter(avahi.IF_UNSPEC,  avahi.PROTO_UNSPEC, 'local')
+            parent = self.get_or_create_domain_iter(avahi.IF_UNSPEC, avahi.PROTO_UNSPEC, 'local')
 
         treeiter = self.insert_row(parent, domain_label, None, interface, protocol, None, domain)
         self.domain_iters[key] = treeiter

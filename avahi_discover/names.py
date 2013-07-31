@@ -27,7 +27,7 @@ def get_if_name(interface, avahi_server=None):
 
 def get_ifproto_name(interface, protocol, avahi_server=None):
     if interface == avahi.IF_UNSPEC and protocol == avahi.PROTO_UNSPEC:
-        return "Wide Area"
+        return 'Wide Area'
     else:
         return get_if_name(interface, avahi_server=avahi_server) + " " + get_proto_name(protocol)
 
@@ -36,7 +36,7 @@ def get_ifprotodom_name(interface, protocol, domain, avahi_server=None):
     if interface <= 0 and protocol <= 0:
         return domain
     else:
-        return domain + " on " + get_ifproto_name(interface, protocol, avahi_server=avahi_server)
+        return domain + ' on ' + get_ifproto_name(interface, protocol, avahi_server=avahi_server)
 
 
 def get_service_type_name(stype):

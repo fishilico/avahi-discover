@@ -65,7 +65,7 @@ class Browser(object):
             if hasattr(self, 'on_new_domain'):
                 self.on_new_domain(interface, protocol, domain, flags)
 
-            # Browse services
+            # Browse service types
             b = self.server.ServiceTypeBrowserNew(interface, protocol, domain, dbus.UInt32(0))
             b = dbus.Interface(self.bus.get_object(avahi.DBUS_NAME, b), avahi.DBUS_INTERFACE_SERVICE_TYPE_BROWSER)
             b.connect_to_signal('ItemNew', self.new_service_type)
